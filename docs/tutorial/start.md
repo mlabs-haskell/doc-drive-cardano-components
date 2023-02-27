@@ -1,1 +1,1 @@
-[go back](/docs/README.md)
+[go back](../README.md)
