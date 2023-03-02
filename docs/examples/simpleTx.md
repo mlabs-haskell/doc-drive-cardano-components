@@ -1,6 +1,6 @@
 # Building a simple Transaction
 
-the following example is taken from the PPP0303
+the following example is taken from the [PPP0303](https://github.com/input-output-hk/plutus-pioneer-program/tree/third-iteration/code/week03)
 
 ## Generate keys
 
@@ -41,7 +41,7 @@ serialiseToTextEnvelope mbDescr a =
 
 The `cardano-cli` command `address build` works for both key and script addresses.
 
-First, the `cardano-cli` function `runAddressBuild` checks if the argument provided is a `PaymentVerifierKey` or a `PaymentVerifierScript`. In the case of a key, it builds a value of type `AddressAny` with `AddressShelley <$> buildShelleyAddress (castVerificationKey vk) mbStakeVerifier nw` where nw is the networkId and mbStakeVerifier an optional stake key. `buildShelleyAddress` in turn uses `makeShelleyAddress` from the cardano-api under the hood.
+First, the `cardano-cli` function `runAddressBuild` checks if the argument provided is a `PaymentVerifierKey` or a `PaymentVerifierScript`. In our case of a key, it builds a value of type `AddressAny` with `AddressShelley <$> buildShelleyAddress (castVerificationKey vk) mbStakeVerifier nw` where `castVerificationKey` is used to convert extended verification keys to ordinary keys, `nw` is the networkId and `mbStakeVerifier` an optional stake key. `buildShelleyAddress` in turn uses `makeShelleyAddress` from the cardano-api under the hood.
 
 ```haskell
 makeShelleyAddress :: NetworkId
@@ -71,10 +71,10 @@ cardano-cli transaction build \
     --out-file tx.body
 ```
 
-with these values, we can build the two fields `txIns` and `txOuts` of the cardano-api `TxBodyContent`. 
+with these values, we can build the two fields `txIns` and `txOuts` of the cardano-api `TxBodyContent`.
 
 The `--tx-in` input gets parsed to a `(TxIn, Maybe (ScriptWitness WitCtxTxIn era))`. As this input is spent from a key address, we don't need a script witness, and the value is thus `(txIn, Nothing)`. 
-Of course, a witness is also needed to spend funds from a key address, and so inside the `runTxBuild` function, the `(tx-in, Nothing)` gets converted into a value of `(txin, BuildTxWith $ KeyWitness KeyWitnessForSpending)`. This is the format that the cardano-api type `TxBodyContent` excpects for its `txIns` field.
+Of course, a witness is also needed to spend funds from a key address, and so inside the cardano-cli `runTxBuild` function, the `(tx-in, Nothing)` gets converted into a value of `(txin, BuildTxWith $ KeyWitness KeyWitnessForSpending)`. This is the format that the cardano-api type `TxBodyContent` excpects for its `txIns` field.
 
 The `--tx-out` input meanwhile gets parsed to a `TxOut CtxTx era`, which is already the format the `TxBodyContent` excpects for its `tx-outs` field. 
 
@@ -92,7 +92,7 @@ The `cardano-cli` can then proceed to build a `BalancedTxBody era` with `runTxBu
 This `runTxBuild` contains basically two big steps. The first: constructing the cardano-api `txBodyContent`. As already described above, we have the two fields `txIns` and `txOuts`. Most of the other fields are of no importance for a simple transaction and get 'none' values, like for example `TxInsCollateralNone :: TxInsCollateral era`
 The one field lacking a value at this point is `txFee`. Since the transaction hasn't been balanced yet - which is the second big step inside `runTxBuild` - it is set to 0 at this point.
 
-Balancing the transaction is done with `makeTransactionBodyAutoBalance` (see `Balancing the transaction` in `spendFromScript.md` for details). To use this function we need a running node to query the `nodeEra`, to which we then can apply the queryStateForBalancedTx function. Having thus all the necessary node information, `makeTransactionBodyAutoBalance` finally produces a BalancedTxBody.
+Balancing the transaction is done with `makeTransactionBodyAutoBalance` (for more details on this see [balancing the transaction](./spendFromScript.md#balancing-the-transaction) in the spendFromScript example)). To use this function we need a running node to query the `nodeEra`, to which we then can apply the queryStateForBalancedTx function. Having thus all the necessary node information, `makeTransactionBodyAutoBalance` finally produces a BalancedTxBody.
      
 ```haskell
 data BalancedTxBody era
@@ -105,15 +105,15 @@ data BalancedTxBody era
 
 ## Sign a simple transaction
 
-Signing a transaction means basically just providing the required witnesses. In our case, to execute the `cardano-cli transaction sign` command we need to provide the balanced transaction body and a `SigningKey PaymentKey` (the one associated to the `VerificationKey PaymentKey` that was used to build the address where the funds are spent from) 
+Signing a transaction means basically just providing the required witnesses. In our case, to execute the `cardano-cli transaction sign` command we need to provide the balanced transaction body and a `SigningKey PaymentKey` (the one associated to the `VerificationKey PaymentKey` that was used to build the address where the funds are spent from).
 
-The key witness is calculated by applying the `makeShelleyKeyWitness` function to these two arguments. And signing the transaction is then straightforward:
+The key witness is calculated by applying the `makeShelleyKeyWitness` function to these two arguments (transaction body and signing key). And signing the transaction is then straightforward:
 
 `signedTx = makeSignedTransaction allKeyWits txbody`
 
 where allKeyWits is, in our case, a list of just the one key witness.
 
-under the hood, signing a transaction looks like this:
+Under the hood, signing a transaction looks like this:
 
 ``` haskell
 \wsk ->
@@ -143,7 +143,7 @@ As the `cardano-cli` parser defaults to the cardano consensus mode and as we dec
 ```bash
 cardano-cli transaction build \
     --alonzo-era \
-    --testnet-magic 1097911063 \
+    --testnet-magic 1 \
     --change-address $(cat 01.addr) \
     --tx-in dfc1a522cd34fe723a0e89f68ed43a520fd218e20d8e5705b120d2cedc7f45ad#0 \
     --tx-out "$(cat 02.addr) 10000000 lovelace" \
@@ -152,10 +152,10 @@ cardano-cli transaction build \
 cardano-cli transaction sign \
     --tx-body-file tx.body \
     --signing-key-file 01.skey \
-    --testnet-magic 1097911063 \
+    --testnet-magic 1 \
     --out-file tx.signed
 
 cardano-cli transaction submit \
-    --testnet-magic 1097911063 \
+    --testnet-magic 1 \
     --tx-file tx.signed
 ```

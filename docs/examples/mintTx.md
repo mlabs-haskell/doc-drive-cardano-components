@@ -1,6 +1,6 @@
 # Building a minting Transaction
 
-This example taken from PPP0306
+This example taken from [PPP0306](https://github.com/input-output-hk/plutus-pioneer-program/tree/third-iteration/code/week06)
 
 From the cardano-api perspective, there is no difference beween `writeValidator` (see [pay to script](./payToScript.md) and the `writeMintingPolicy` function below, both validator and minting policy are converted into a `PlutusScriptSerialised` and then written to a file. 
 
@@ -15,9 +15,9 @@ Having the monetary policy script, we first need to calculate the policyId. This
 
 `serialiseToRawBytesHexText $ hashScript script`
 
-note: the `ScriptHash` obtained by the `hashScript` function is separate from the `Hash` type to avoid the script hash type being parametrised by the era. The representation is era independent, and there are many places where we want to use a script hash where we don't want things to be era-parametrised.
+note: the `ScriptHash` obtained by the `hashScript` function is separate from the `Hash` type to avoid the script hash type being parametrised by the era.
 
-Next to the policyId, we need a token name to construct a value. The TokenName, called `AssetName` on the cardano-api side, must be in hex form. so coming from the plutus side, we first need to convert it to the cardano-api type and then serialise it to hex bytes (and also unpack it as the cardano-cli expects a string):
+Besides the policyId, we need a token name to construct a value. The TokenName, called `AssetName` on the cardano-api side, must be in hex form. so coming from the plutus side, we first need to convert it to the cardano-api type and then serialise it to hex bytes (and also unpack it as the cardano-cli expects a string):
 
 ```haskell
 unsafeTokenNameToHex :: TokenName -> String
@@ -26,17 +26,17 @@ unsafeTokenNameToHex = BS8.unpack . serialiseToRawBytesHex . fromJust . deserial
     getByteString (BuiltinByteString bs) = bs
 ```
 
-Having the policyId and tnHex, the value defined for the cardano-cli (see `--tx-out` and `--mint` below) must be in the form of `amt policyId.tnHex`, where amt is the amount of the token we want to mint.
+Having the policyId and tnHex, the value defined for the cardano-cli (see $v in `--tx-out` and `--mint` below) must be in the form of `amt policyId.tnHex`, where amt is the amount of the token we want to mint.
 
 ## Building the transaction
 
 Again, as for spending from a validator script, minting from a policy script is only possible with a script witness. 
 
-More precisely, the mint value passed to `runTxBuild` in cardano-cli is of type `(Value, [ScriptWitness WitCtxMint era])`, which is somehow similar to the `txIns` field of the transaction body content, but instead of a list of pairs (txIn, witness), we have just one value containing all the tokens to mint plus a list of script witnesses, this time with the context `WitCtxMint` instead of `WitCtxTxIn`
+More precisely, the mint value passed to `runTxBuild` in cardano-cli is of type `(Value, [ScriptWitness WitCtxMint era])`, which is quite similar to the `txIns` field of the transaction body content, but instead of a list of pairs (txIn, witness), we have just one value containing all the tokens to mint plus a list of script witnesses, this time with the context `WitCtxMint` instead of `WitCtxTxIn`.
 
-The number of script witnesses depends on the number of the poliyIds contained in the value, of course. In our case it's just one token to mint, so there will be one script witness. 
+The number of script witnesses depends on the number of the poliyIds contained in the value, of course. In our case there is just one token to mint, so there will be one script witness. 
 
-As for the datum needed for a script witness, the cardano-cli simply parses it, when in the `WitCtxMint` context, to a value of `NoScriptDatumForMint`. The redeemer meanwhile is a type alias for `ScriptData` and thus context independent. As in the `spendFromScript` example, we use the unit.json redeemer.
+As for the datum needed for a script witness, the cardano-cli simply parses it - when in the `WitCtxMint` context - to a value of `NoScriptDatumForMint`. The redeemer meanwhile is a type alias for `ScriptData` and thus context independent. As in the [spendFromScript](./spendFromScript.md) example, we use the unit.json redeemer.
 
 The cardano-cli function `createTxMintValue` finally produces a value of the correct type (see below) which we need for the `txMintValue` field of the transaction body content.
 

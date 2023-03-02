@@ -1,8 +1,8 @@
 # Transaction to a script address
 
-This example is taken from the PPP0303
+This example is taken from the [PPP0303](https://github.com/input-output-hk/plutus-pioneer-program/tree/third-iteration/code/week03)
 
-Building a transaction with a payment to a script address comes with two major changes. First, instead of a payment key hash, we need a script hash for our address. and second, we need to provide a datum hash (or, since the beginning of the Babagge era, alternatively a `TxOutDatumInline`).
+Building a transaction with a payment to a script address comes with two major changes compared to the [simple transaction](./simpleTx.md). First, instead of a payment key hash, we need a script hash for our address. and second, we need to provide a datum hash (or, since the beginning of the Babagge era, alternatively a `TxOutDatumInline`).
 
 So how do we get script address? Same as for a key address, we can use `cardano-cli address build`, but this time instead of a verification key, we must provide a `Script`.
 
@@ -15,7 +15,7 @@ writeValidator :: FilePath -> Ledger.Validator -> IO (Either (FileError()) ())
 writeValidator file = writeFileTextEnvelope @(PlutusScript PlutusScriptV1) file Nothing . PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise . Ledger.unValidatorScript
 ```
 
-under the hood, `makeShelleyAddress` (see below) is applied to a `PaymentCredential`, though. So the cardano-api provides the `hashScript` function which converts our `PlutusScript PlutusScriptV1 (PlutusScriptSerialised script)` into a value of type `ScriptHash`.
+Under the hood though, `makeShelleyAddress` (see below) isn't applied to a script, but to a `PaymentCredential`. So the cardano-api provides the `hashScript` function which converts our `PlutusScript PlutusScriptV1 (PlutusScriptSerialised script)` into a value of type `ScriptHash`.
 applying the `PaymentCredentialByScript` data constructor to this hashed script finally gives us the correct PaymentCredential.
 
 ```haskell
@@ -30,7 +30,7 @@ makeShelleyAddress nw pc scr =
       (toShelleyStakeReference scr)
 ```
 
-As a last step, the shelley address must be converted into a value of type `AddressInEra` needed to build the txOut. This can be done with the `shelleyAddressInEra` function. 
+As a last step, the shelley address must be converted into a value of type `AddressInEra` needed to build the txOut for the `txOuts` field of the transaction body content. This can be done with the `shelleyAddressInEra` function. 
 
 ## Getting the ScriptData
 
@@ -65,7 +65,7 @@ data TxOut ctx era = TxOut (AddressInEra    era)
                            (ReferenceScript era)
 ```
 
-Other then the new `txOut`, the transaction body content is built exactly in the same way as in [simple transaction](./simpleTx). And once we have the TxBodyContent, we can again apply `makeTransactionBodyAutoBalance`, giving us a BalancedTxBody AlonzoEra (for more details on this see [spendFromScript](./spendFromScript.md#balancing-the-transaction)).
+Other then the new `txOut`, the transaction body content is built in exactly the same way as in [simple transaction](./simpleTx). And once we have the TxBodyContent, we can again apply `makeTransactionBodyAutoBalance`, giving us a BalancedTxBody AlonzoEra (for more details on this see [balancing the transaction](./spendFromScript.md#balancing-the-transaction) in the spendFromScript example).
 
 ```bash
 cardano-cli transaction build \
