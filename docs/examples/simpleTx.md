@@ -12,6 +12,8 @@ The functions for the cryptographic key are coming from the cardano-crypto-class
 
 having built a signing key, cardano-cli uses the `getVerificationKey :: SigningKey PaymentKey -> VerificationKey PaymentKey` function which is defined in the `Key` class of which `PaymentKey` is an instance. 
 
+Putting all together:
+
 ```haskell
 -- cardano-cli
 generateKeyPair :: Key keyrole => AsType keyrole -> IO (VerificationKey keyrole, SigningKey keyrole)
