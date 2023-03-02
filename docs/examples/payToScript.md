@@ -2,7 +2,7 @@
 
 This example is taken from the PPP0303
 
-Building a transaction with a payment to a script address comes with two major changes. First, instead of a payment key hash, we need a script hash for our address. and second, we need to provide a datum hash (or, since the beginning of the Babagge era, alternatively a `TxOutDatumInline` which is built with only `ScriptData`).
+Building a transaction with a payment to a script address comes with two major changes. First, instead of a payment key hash, we need a script hash for our address. and second, we need to provide a datum hash (or, since the beginning of the Babagge era, alternatively a `TxOutDatumInline`).
 
 So how do we get script address? Same as for a key address, we can use `cardano-cli address build`, but this time instead of a verification key, we must provide a `Script`.
 
@@ -40,7 +40,7 @@ The cardano-api has its own `data` type. The conversion can be done with the car
 
 To use this cardano-api data in the cardano-cli, it is serialised to json and written to a file. `scriptDataToJson` works either with `ScriptDataJsonDetailedSchema` (used to write Json into a file) or with `ScriptDataJsonNoSchema` (if inlined in the command directly).
 
-The following code shows how to convert and serialise the unit value.
+The following code shows how to convert and serialise the unit value (which is an instance of PlutusTx.ToData) and write it to `unit.json`.
 
 ```haskell
 writeUnit :: IO ()
@@ -50,12 +50,13 @@ writeJSON :: PlutusTx.ToData a => FilePath -> a -> IO ()
 writeJSON file = LBS.writeFile file . encode . scriptDataToJson ScriptDataJsonDetailedSchema . fromPlutusData . PlutusTx.toData
 ```
 
-alternatively, we can use this [library](https://github.com/input-output-hk/plutus-apps/blob/main/plutus-ledger/src/Ledger/Tx/CardanoAPI.hs) as an interface to the transaction types from `cardano-api`, see hydra-demo.md example.
-this file is read and parsed into a `TxOutDatumHash ScriptDataInAlonzoEra hash`, where hash is of type `Hash ScriptData`. As mentioned above, a value of type `ScriptData` can also be converted directly from a plutus type with `fromPlutusData` 
+note: alternatively, we can use the [CardanoAPI module](https://github.com/input-output-hk/plutus-apps/blob/main/plutus-ledger/src/Ledger/Tx/CardanoAPI.hs) from plutus-apps as an interface to the `cardano-api` types, see [hydra-demo](./hydra-demo.md) example.
+
+The unit.json file is then read and parsed into a `TxOutDatumHash ScriptDataInAlonzoEra hash` by the cardano-cli, where hash is of type `Hash ScriptData`. 
 
 ## Putting it all together
 
-so, having the address and datum, building the TxOut is straightforward (using `ReferenceScriptNone` as `ReferenceScript era`):
+So, having the address and datum hash, building the TxOut is straightforward (using `ReferenceScriptNone` as `ReferenceScript era` and building a `TxOutValue` with the cardano-api `valueFromList` function for example):
 
 ```haskell
 data TxOut ctx era = TxOut (AddressInEra    era)
@@ -64,7 +65,7 @@ data TxOut ctx era = TxOut (AddressInEra    era)
                            (ReferenceScript era)
 ```
 
-Other then the new `txOut`, the transaction body content is built exactly in the same way as in `simple transaction`. And once we have the TxBodyContent, we can again apply `makeTransactionBodyAutoBalance`, giving us a BalancedTxBody AlonzoEra.
+Other then the new `txOut`, the transaction body content is built exactly in the same way as in [simple transaction](./simpleTx). And once we have the TxBodyContent, we can again apply `makeTransactionBodyAutoBalance`, giving us a BalancedTxBody AlonzoEra (for more details on this see [spendFromScript](./spendFromScript.md#balancing-the-transaction)).
 
 ```bash
 cardano-cli transaction build \
@@ -78,7 +79,7 @@ cardano-cli transaction build \
 ```
 
 
-Also signing and submitting works the same way as in simpleTx.
+Also signing and submitting works the same way as in [simple transaction](./simpleTx).
 
 ```bash
 cardano-cli transaction sign \

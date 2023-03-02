@@ -6,7 +6,7 @@ Another tool to build and submit transactions is the `cardano-cli`. the cardano-
 
 - [simple transaction](./examples/simpleTx.md)
 - [pay to script address](./examples/payToScript.md)
-- [spend from script address](./examples/spandFromScript.md)
+- [spend from script address](./examples/spendFromScript.md)
 - [minting transaction](./examples/mintTx.md)
 - [withraw staking rewards](./examples/withdrawal.md)
 

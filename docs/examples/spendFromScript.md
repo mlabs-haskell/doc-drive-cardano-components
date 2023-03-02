@@ -1,11 +1,11 @@
-# Building a spending from validator tx
+# Spending from a script address
 
 This example is taken from PPP0303
 
 ```bash
 cardano-cli transaction build \
     --alonzo-era \
-    --testnet-magic 1097911063 \
+    --testnet-magic 1 \
     --change-address $(cat 02.addr) \
     --tx-in 18cbe6cadecd3f89b60e08e68e5e6c7d72d730aaa1ad21431590f7e6643438ef#1 \
     --tx-in-script-file vesting.plutus \
