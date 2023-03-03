@@ -1,14 +1,14 @@
-# building transactions by hand
+# Building transactions by hand
 
-to construct a cardano-api `TxBody` we need first the bodyContent. We will construct a cardano-api `TxBodyContent BuildTx AlonzoEra`, for which we need, in particular, the two fields `txIns` and `txOuts`
+to construct a cardano-api `TxBody` we need first the bodyContent. We will construct a cardano-api `TxBodyContent BuildTx AlonzoEra`, for which we need, in particular, the two fields `txIns` and `txOuts`.
 
-## constructing the fitting txIns
+## Constructing the fitting txIns
 
 The `txIns` field expects a value of the following type:
 
 `type TxIns build era = [(TxIn, BuildTxWith build (Witness WitCtxTxIn era))]`
 
-so, next to the TxIn itself, there is the information of whether the TxIn needs a `KeyWitness` or a `ScriptWitness`
+so, next to the TxIn itself, there is the information of whether the TxIn needs a `KeyWitness` or a `ScriptWitness`. The hydra-demo project offers the following two helper functions:
 
 ```haskell
 -- for spending with a KeyWitness
@@ -82,7 +82,7 @@ To construct a TxOut for a script address we additionally need a `TxOutDatumHash
 
 `datumHash = TxOutDatumHash ScriptDataInAlonzoEra (hashScriptData $ toCardanoData d)`
 
-where `toCardanoData` again is from Ledger.Tx.CardanoAPI.
+where `toCardanoData` again is from Ledger.Tx.CardanoAPI and `hashScriptData` is a cardano-api function.
 
 For the script address, the `PaymentCredential` must be a `PaymentCredentialByScript ScriptHash`, having this we can again construct the address with
 
@@ -91,6 +91,27 @@ For the script address, the `PaymentCredential` must be a `PaymentCredentialBySc
 And the resulting TxOut is then:
 
 `scriptOut = TxOut scriptAddr (lovelaceToTxOutValue lovelace) datumHash ReferenceScriptNone`
+
+Alternatively, we can use the `toCardanoAddressInEra` from plutus-apps, by substituting `BabbageEra` with `AlonzoEra` as done below (as we are building a transaction in the AlonzoEra), and then building the `TxOut` directly.  
+
+```haskell
+-- taken from plutus-apps
+toCardanoAddressInEra :: C.NetworkId -> P.Address -> Either ToCardanoError (C.AddressInEra C.AlonzoEra)
+toCardanoAddressInEra networkId (P.Address addressCredential addressStakingCredential) =
+    C.AddressInEra (C.ShelleyAddressInEra C.ShelleyBasedEraAlonzo) <$>
+        (C.makeShelleyAddress networkId
+            <$> toCardanoPaymentCredential addressCredential
+            <*> toCardanoStakeAddressReference addressStakingCredential)
+
+-- taken from hydra-demo
+txOutToScript :: PlutusTx.ToData d => NetworkId -> Ledger.Address -> Lovelace -> TxDatum d -> Either ToCardanoError (TxOut ctx AlonzoEra)
+txOutToScript networkId scriptAddress lovelace (TxDatum datum) = do
+  address <- toCardanoAddressInEra networkId scriptAddress
+  pure $ TxOut address (lovelaceToTxOutValue lovelace) (TxOutDatumHash ScriptDataInAlonzoEra (hashScriptData scriptData))
+  where
+    scriptData = toCardanoData datum
+
+```
 
 ## Putting it all together
 
@@ -110,7 +131,7 @@ buildTxBody inputRefs = do
   first (("bad tx-body: " <>) . show) $ createAndValidateTransactionBody bodyContent
 ```
 
-where `createAndValidateTransactionBody` (respectively the deprecated `makeTransactionBody` which is originally used in the example) is taken from the cardano-api. And as `baseBodyContent` we have:
+where `createAndValidateTransactionBody` (respectively the deprecated `makeTransactionBody` which is used in the hydra-demo project) is taken from the cardano-api. And as `baseBodyContent` we have:
 
 ```haskell
 baseBodyContent :: TxBodyContent BuildTx AlonzoEra
@@ -148,7 +169,7 @@ note: the `txFee` is set to 0 at this point because this transaction will be sen
 
 To build a transaction that spends from a script address, see `buildClaimTx` from the [hydra-demo](https://github.com/mlabs-haskell/hydra-demo/blob/master/src/HydraRPS/App.hs). 
 
-There is one main difference to the example above: The `txIns` field of the TxBodyContent contains elements (see `myValidatorTxIn` and `theirValidatorTxIn` below) that are built with `txInForValidator` instead of `txInForSpending`. So, instead of being paired with a `keyWitness`, their `txIn` is paired with a `scriptWitness`.
+There is one main difference to the example above: The `txIns` field of the TxBodyContent contains elements (see `myValidatorTxIn` and `theirValidatorTxIn` below) that are built with `txInForValidator` instead of `txInForSpending` (see functions [above](#constructing-the-fitting-txIns)). So, instead of being paired with a `keyWitness`, their `txIn` is paired with a `scriptWitness`.
 
 ```haskell
 let bodyContent =
