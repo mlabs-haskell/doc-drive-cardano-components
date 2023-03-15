@@ -8,7 +8,9 @@ First, we need to create a key pair of type `VerificationKey PaymentKey` and `Si
 
 `keyrole` can be a `ByronKey`, `PaymentKey` (by default) or a `PaymentExtendedKey`, resulting in `AsByronKey`, `AsPaymentKey` or `AsPaymentExtendedKey` values for `AsType keyrole`.
 
-The functions for the cryptographic key are coming from the cardano-crypto-class package, for PaymentKeys we use the public-key signature system Ed25519, Ed25519DSIGN being an instance of the [class DSIGNAlgorithm](https://github.com/input-output-hk/cardano-base/blob/dd60865a18478aa7f2936693da952cd22d76b080/cardano-crypto-class/src/Cardano/Crypto/DSIGN/Ed25519.hs)
+The functions for the cryptographic key are coming from the cardano-crypto-class package, for PaymentKeys we use the public-key signature system Ed25519, Ed25519DSIGN being an instance of the [class DSIGNAlgorithm](https://github.com/input-output-hk/cardano-base/blob/master/cardano-crypto-class/src/Cardano/Crypto/DSIGN/Ed25519.hs)
+
+For more details about the different keys, see [keys](./keys.md)
 
 having built a signing key, cardano-cli uses the `getVerificationKey :: SigningKey PaymentKey -> VerificationKey PaymentKey` function which is defined in the `Key` class of which `PaymentKey` is an instance. 
 
