@@ -1,5 +1,7 @@
 # from utxo to txIn and txOut
 
+The Unspent Transaction Output (UTXO) model is used on the Cardano network to represent transactions as inputs and outputs of UTXOs.
+
 what is an utxo? the cardano-api knows this term only in connection to a query.
 
 So, `QueryUTxOFilter` provides various ways to query a filtered subset of the UTxO, where `UTxO` means all existing utxos on the blockchain.
