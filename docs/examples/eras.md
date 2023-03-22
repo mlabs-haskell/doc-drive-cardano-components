@@ -4,7 +4,7 @@ When talking about (ledger) eras in Cardano, it's important not to confuse them 
 
 When talking about eras in the context of the cardano-api, we are meaning the ledger eras. At the moment of writing, there are six such eras, defined in the [Cardano.Api.Eras](https://github.com/input-output-hk/cardano-node/blob/master/cardano-api/src/Cardano/Api/Eras.hs) module. The latest era is the Conway era which brought more interoparability with other chains like Bitcoin or Ethereum by adding support for the SECP256k1 cryptographic system.
 
-In the cardano-api, the era types are used to tag other types like `TxBody` or `TxOut`, assuring that components from different eras don't get mixed together. Then, when we build transactions, these era type tags get at some point mapped to the corresponding type tags used in the ledger library. The mapping for the Shelley era and onwards (so all except the Byron era) is defined by the `type family ShelleyLedgerEra era` in Cardano.Api.Eras.
+In the cardano-api, the era types are used to tag other types like `TxBody` or `TxOut`, assuring that components from different eras don't get mixed together. Then, when building transactions, these era type tags get at some point mapped to the corresponding era types used in the cardano-ledger library. The mapping for the Shelley era and onwards (so all except the Byron era) is defined by the `type family ShelleyLedgerEra era` in Cardano.Api.Eras.
 
 As an example of such a mapping, we can take the `toShelleyTxOut` conversion function:
 
@@ -16,21 +16,21 @@ toShelleyTxOut :: forall era ledgerera.
                -> Ledger.TxOut ledgerera
 ```
 
-Let's say we have built a `TxOut` for the `AlonzoEra`. Then, given the equivalence constraint between `ShelleyLedgerEra AlonzoEra` and `ledgerera`, the resulting `Ledger.TxOut` through pattern matching will also be in the Alonzo era: 
+Let's say we have built a `TxOut` for the `AlonzoEra`. Then, given the equivalence constraint between `ShelleyLedgerEra AlonzoEra` and `ledgerera`, the resulting `Ledger.TxOut` will, through pattern matching, also be in the Alonzo era: 
 
 ```haskell
 toShelleyTxOut _ (TxOut addr (TxOutValue MultiAssetInAlonzoEra value) txoutdata _) =
     AlonzoTxOut (toShelleyAddr addr) (toMaryValue value) (toAlonzoTxOutDataHash txoutdata)
 ```
 
-The `Ledger.TxOut` type is defined in the `EraTxOut` class in [Cardano.Ledger.Core](https://github.com/input-output-hk/cardano-ledger/blob/master/libs/cardano-ledger-core/src/Cardano/Ledger/Core.hs) and the class instance for the Alonzo era, the `AlonzoTxOut` data constructor, in [Cardano.Ledger.Alonzo.TxOut](https://github.com/input-output-hk/cardano-ledger/blob/master/eras/alonzo/impl/src/Cardano/Ledger/Alonzo/TxOut.hs) 
+The `Ledger.TxOut` type is defined in the `EraTxOut` class in [Cardano.Ledger.Core](https://github.com/input-output-hk/cardano-ledger/blob/master/libs/cardano-ledger-core/src/Cardano/Ledger/Core.hs) and the class instance for the Alonzo era, the `AlonzoTxOut` data constructor, in [Cardano.Ledger.Alonzo.TxOut](https://github.com/input-output-hk/cardano-ledger/blob/master/eras/alonzo/impl/src/Cardano/Ledger/Alonzo/TxOut.hs).
 
 ## Shelley-based eras
 
 As seen above with `ShelleyLedgerEra`, the cardano-api makes a strong distinction between Byron (the first era) and Shelley (the other five eras starting with the Shelley era).
-The reason for this, as explained in `Cardano.Ledger.Eras`, is that the latter are all eras that are based on Shelley with only minor differences, so it is useful to be able to treat the Shelley-based eras in a mostly-uniform way.
+The reason for this, as explained in `Cardano.Ledger.Eras`, is that the latter are all eras based on Shelley with only minor differences, so it is useful to be able to treat the Shelley-based eras in a mostly-uniform way.
 
-Take for example `validateTxBodyContent` from Cardano.Api.TxBody. As the `TxBodyContent` of a Byron transaction is very simple and doesn't need validation (see how to generate a Byron transaction with [txSpendUTxOByronPBFT](https://github.com/input-output-hk/cardano-node/blob/74dc39653653ef41fdf437dabedd580e647db67c/cardano-cli/src/Cardano/CLI/Byron/Tx.hs#L186), this function only accepts transaction body contents from the Shelley era and later.
+Take for example `validateTxBodyContent` from Cardano.Api.TxBody. As the `TxBodyContent` of a Byron transaction is very simple and doesn't need validation (see how to generate a Byron transaction with [txSpendUTxOByronPBFT](https://github.com/input-output-hk/cardano-node/blob/master/cardano-cli/src/Cardano/CLI/Byron/Tx.hs#L186)), this function only accepts transaction body contents from the Shelley era and later.
 
 ```haskell
 validateTxBodyContent
@@ -39,7 +39,7 @@ validateTxBodyContent
   -> Either TxBodyError ()
 ```
 
-The `era` cannot be `ByronEra`, as the GADT below doesn't permit to construct a value with the type variable `ByronEra`
+The `era` cannot be `ByronEra`, as the GADT below doesn't permit to construct a value with a type that uses the type variable `ByronEra`
 
 ```haskell
 data ShelleyBasedEra era where
@@ -88,7 +88,7 @@ makeShelleyAddress :: NetworkId
                    -> Address ShelleyAddr
 ```
 
-If we want to use this address in a type that will get converted to its corresponding ledger type, we need to add the era information, though. So, to build the `TxOut` used in `toShelleyTxOut` (see above), we need to tag our Shelley address with a specific era:
+If we want to use this address in a type that will get converted to its corresponding cardano-ledger type, we need to add the era information, though. So, to build the `TxOut` used in `toShelleyTxOut` (see above), we need to tag our Shelley address with a specific era:
 
 ```haskell
 shelleyAddressInEra :: IsShelleyBasedEra era

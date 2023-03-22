@@ -1,23 +1,53 @@
-# from utxo to txIn and txOut
+# The UTxO in the cardano-api
 
-The Unspent Transaction Output (UTXO) model is used on the Cardano network to represent transactions as inputs and outputs of UTXOs.
+The Cardano network uses the Unspent Transaction Output (UTxO) model to represent transactions as inputs and outputs of UTxOs. A high level explanation of this model can be found [here](https://developers.cardano.org/docs/stake-pool-course/handbook/utxo-model/#:~:text=An%20unspent%20transaction%20output%20is,cannot%20be%20consumed%20in%20part.)
 
-what is an utxo? the cardano-api knows this term only in connection to a query.
+A little bit more technically, a UTxO can be seen as a data type containing two elements:
+- a transaction ID, which is a BLAKE2b-256 hash of the transaction in which it was produced, and an index (because a transaction can of course have multiple outputs)
+- The value it contains, the address to which it was sent, an optional datum (or datum hash) and, since the Vasil hard fork, an optional reference script (for its usage see [cip33](https://cips.cardano.org/cips/cip33/)).
 
-So, `QueryUTxOFilter` provides various ways to query a filtered subset of the UTxO, where `UTxO` means all existing utxos on the blockchain.
+from [emurgo](https://emurgo.io/understanding-unspent-transaction-outputs-in-cardano/)
 
-Also: in the context of a minimum utxo value, whereby this resembles more a minimum txOut value, as the function `calculateMinimumUTxO` takes as an argument a 
--> TxOut CtxTx era
+This is how the UTxO is defined in the cardano-api:
 
-and thirdly: we use CtxUTxO vs CtxTx to indicate whether the `TxOutDatum` of TxOut can be a `TxOutDatumInTx` (in the case of CtxTx) or not (in the case of CtxUTxO). (To go from one to the other we have toCtxUTxOTxOut)
+```haskell
+newtype UTxO era = UTxO { unUTxO :: Map TxIn (TxOut CtxUTxO era) }
+```
 
-explanation Cardano.Api.TxBody:
+where TxIn contains the transaction ID and index, and TxOut the remaining data.
 
-A transaction output that specifies the whole datum value. This can
-only be used in the context of the transaction body, and does not occur
-in the UTxO. The UTxO only contains the datum hash.
+As the UTxO type above shows, it is a map of `TxIn`s and `TxOut`s. So being precise, a UTxO is not **one** unspent transaction output, but arbitrarily many. This can lead to confusion, as normaly when speaking about a UTxO, we mean **one** unspent transaction output. 
+
+In the cardano-api, the UTxO data type is used mainly for queries. When building such a UTxO query, the `QueryUTxOFilter` is used to filter the query, and with the precise UTxO definition in mind, it makes sense that the `WholeUTxO` value above means querying the chain for all unspent transaction outputs:
+
+```haskell  
+data QueryUTxOFilter =
+     -- | /O(n) time and space/ for utxo size n
+     QueryUTxOWhole
+     -- | /O(n) time, O(m) space/ for utxo size n, and address set size m
+   | QueryUTxOByAddress (Set AddressAny)
+     -- | /O(m log n) time, O(m) space/ for utxo size n, and address set size m
+   | QueryUTxOByTxIn (Set TxIn)
+```
+
+The `cardano-cli query utxo` has as options `--whole-utxo`, `--address` and `--tx-in`, and uses these filters accordingly.
+
+// So, the cardano-api type `QueryUTxOFilter` provides various ways to query a filtered subset of the UTxO, where `UTxO` means all existing utxos on the blockchain.
+
+// Also: in the context of a minimum utxo value, whereby this resembles more a minimum txOut value, as the function `calculateMinimumUTxO` takes as an argument a 
+// -> TxOut CtxTx era
+
+// and thirdly: we use CtxUTxO vs CtxTx to indicate whether the `TxOutDatum` of TxOut can be a `TxOutDatumInTx` (in the case of CtxTx) or not (in the case of CtxUTxO). (To go from one to the other we have toCtxUTxOTxOut)
+
+// explanation Cardano.Api.TxBody:
+
+// A transaction output that specifies the whole datum value. This can
+// only be used in the context of the transaction body, and does not occur
+// in the UTxO. The UTxO only contains the datum hash.
 
 also, for estimating execution units and so forth, where we need functions from cardano-ledger, we use cardano-api utxo and convert it into Ledger.UTxO, see `toLedgerUTxO` in `evaluateTrasactionExecutionUnits` in Cardano.Api.Fees
+
+
 
 so, there really are just TxIn and TxOut
 

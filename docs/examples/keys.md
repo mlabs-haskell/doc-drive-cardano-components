@@ -1,6 +1,6 @@
 # The different keys
 
-Cardano uses the the public-key signature system [Ed25519](https://en.wikipedia.org/wiki/EdDSA). There is a wide variety of private/public key pairs (resp. `SigningKey`/`VerificationKey`s in cardano-api terms). High level information about the different keys can be found [here](https://developers.cardano.org/docs/operate-a-stake-pool/cardano-key-pairs/), while the interface to generate and serialise them is defined in the `Key` class in [Cardano.Api.Keys.Class](https://github.com/input-output-hk/cardano-node/blob/master/cardano-api/src/Cardano/Api/Keys/Class.hs). The class instances for the different keys (called `keyrole`s in the cardano-api) are in the following modules:
+Cardano uses the the public-key signature system [Ed25519](https://en.wikipedia.org/wiki/EdDSA) for a variety of private/public key pairs (resp. `SigningKey`/`VerificationKey`s in cardano-api terms). High level information about the different keys can be found [here](https://developers.cardano.org/docs/operate-a-stake-pool/cardano-key-pairs/), while the interface to generate and serialise them is defined in the `Key` class in [Cardano.Api.Keys.Class](https://github.com/input-output-hk/cardano-node/blob/master/cardano-api/src/Cardano/Api/Keys/Class.hs). The class instances for the different keys (called `keyrole`s in the cardano-api) are in the following modules:
 
 - Cardano.Api.Keys.Shelley
   - PaymentKey
@@ -11,11 +11,11 @@ Cardano uses the the public-key signature system [Ed25519](https://en.wikipedia.
   - GenesisExtendedKey
   - GenesisDelegateKey
   - GenesisDelegateExtendedKey
-  - GenesisUTxOKey, this is one/several key/s to spend the funds created in the genesis file [see here](https://github.com/input-output-hk/cardano-node/blob/master/doc/reference/shelley-genesis.md)
-  - StakePoolKey, this is a very sensitive key, [see here](https://developers.cardano.org/docs/operate-a-stake-pool/cardano-key-pairs/#cardano-stake-pool-key-pairs)
+  - GenesisUTxOKey
+  - StakePoolKey
 - Cardano.Api.Keys.Praos
-  - KesKey [link](https://github.com/input-output-hk/cardano-node/blob/master/doc/stake-pool-operations/7_KES_period.md), KES stands for Key Evolving Signature
-  - VrfKey [link](https://medium.com/dcspark/cardano-algorand-leader-selection-explained-81f71a30b8bb), key take away: every stake pool operator has its own VRF key and this VRF key decides whether or not he is elected for a specific slot
+  - KesKey
+  - VrfKey
 - Cardano.Api.Keys.Byron
   - ByronKey
   - ByronKeyLegacy
@@ -69,14 +69,6 @@ instance Crypto StandardCrypto where
   type ADDRHASH StandardCrypto = Blake2b_224
 ```
 
-
------
-Then, the mapping to the types used in the `cardano-crypto-class` package where the keys are finally created is defined in the [Keys module](https://github.com/input-output-hk/cardano-ledger/blob/master/libs/cardano-ledger-core/src/Cardano/Ledger/Keys.hs)  
-The distinction between the cryptographic systems on the cardano-ledger side is made in the crypto class, respectively its instance for `StandardCrypto` [here](https://github.com/input-output-hk/cardano-ledger/blob/master/libs/cardano-ledger-core/src/Cardano/Ledger/Crypto.hs#L39)
-instance of the class `DSIGNAlgorithm` of Ed25519DSIGN is defined [here](https://github.com/input-output-hk/cardano-base/blob/master/cardano-crypto-class/src/Cardano/Crypto/DSIGN/Ed25519.hs#L75)
------
-
-
 ## Normal and extended Shelley keys
 
 Ten out of 14 keyroles are defined in Cardano.Api.Keys.Shelley (see above). And though they have different names, under the hood they fall in just two categories: normal shelley keys and extended shelley keys.
@@ -91,11 +83,18 @@ data ShelleySigningKey =
      | ShelleyExtendedSigningKey Crypto.HD.XPrv
 ```
 
-A normal Shelley signing key is just what its name implies: A payment key that can be used to sign transactions. Most wallets for Cardano though are HD ([hierarchical deterministic](https://github.com/input-output-hk/technical-docs/blob/main/cardano-components/adrestia/doc/key-concepts/hierarchical-deterministic-wallets.md)) wallets, also called multi-address wallets, and use an extended payment key, also called the root key, from which other (private and public) keys can be derived. HD wallets are similar to those described in [BIP-0032](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#motivation), with the difference that they use (as mentioned above) Ed25519 arithmetic instead of Bitcoins P256K1 arithmethic. the xprv is 128 bytes, but serialised..
+A normal Shelley signing key is just what its name implies: A payment key that can be used to sign transactions. Most wallets for Cardano though are HD ([hierarchical deterministic](https://github.com/input-output-hk/technical-docs/blob/main/cardano-components/adrestia/doc/key-concepts/hierarchical-deterministic-wallets.md)) wallets, also called multi-address wallets, and use an extended payment key, also called the root key, from which other (private and public) keys can be derived. Cardano HD wallets are similar to those described in [BIP-0032](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#motivation), with the difference that they use (as mentioned above) Ed25519 arithmetic instead of Bitcoins P256K1 arithmethic.
 
-The module to work with these extended keys is [Cardano.Crypto.Wallet](https://github.com/input-output-hk/cardano-crypto/blob/develop/src/Cardano/Crypto/Wallet.hs) in the cardano-crypto package. The module contains, for example, the `toXPub` function which the cardano-api uses to convert a `SigningKey PaymentExtendedKey` into a `VerificationKey PaymentExtendedKey` (see `getVerificationKey` in the `PaymentExtendedKey` instance of the `Key` class). The modules also contains the functions to derive child keys from signing and verification keys, these functions are not used by the cardano-api, though, but for example by the cardano-wallet [here](https://github.com/input-output-hk/cardano-wallet/blob/master/lib/wallet/src/Cardano/Wallet/Primitive/AddressDerivation/Shelley.hs#L185) 
+The module to work with these extended keys is [Cardano.Crypto.Wallet](https://github.com/input-output-hk/cardano-crypto/blob/develop/src/Cardano/Crypto/Wallet.hs) in the cardano-crypto package. The module contains, for example, the `toXPub` function which the cardano-api uses to convert a `SigningKey PaymentExtendedKey` into a `VerificationKey PaymentExtendedKey` (see `getVerificationKey` in the `PaymentExtendedKey` instance of the `Key` class). The module also contains the functions to derive child keys from signing and verification keys, these functions are not used by the cardano-api, though, but for example by the cardano-wallet [here](https://github.com/input-output-hk/cardano-wallet/blob/master/lib/wallet/src/Cardano/Wallet/Primitive/AddressDerivation/Shelley.hs#L185) 
 
-The structure is not always the same. Serialisation of extended keys works like the following: [Bip](https://cips.cardano.org/cips/cip16/), the cardano-addresses tool for example encodes keys like this. But the extended keys in the cardano-api also contain the public key, so to convert them, cardano-cli uses `convertBip32SigningKey` which in turn uses `xPrvFromBytes` from the cardano-api:
+The naming of the extended keys in the Cardano ecosystem can lead to some confusion. In places like [here](https://input-output-hk.github.io/jormungandr/jcli/key.html), we distinguish between `Ed25519Bip32` (extended key with chaincode for derivation) and `Ed25519Extended` (extended key without chaincode). In the cardano-api, the latter is not used and a `PaymentExtendedKey` corresponds to the `Ed25519Bip32` key. As the function below shows, the text envelope contains this `bip32` information:
+
+```haskell
+instance HasTextEnvelope (SigningKey PaymentExtendedKey) where
+    textEnvelopeType _ = "PaymentExtendedSigningKeyShelley_ed25519_bip32"
+```
+
+Another source for confusion can be the serialisation of extended keys, see [BIP16](https://cips.cardano.org/cips/cip16/). the cardano-addresses tool for example encodes extended signing keys without the public key, as it can easily be derived from the public key, and that's exactly what the following cardano-api function does:
 
 ```haskell
 xPrvFromBytes :: ByteString -> Maybe CC.XPrv
@@ -115,9 +114,7 @@ xPrvFromBytes bytes
       pure $ Ed25519.pointEncode $ Ed25519.toPoint scalar
 ```
 
-This function shows nicely how the pub key is calculated and then added in between the extended private key and the chaincode.
-
-and from cardano-cli:
+This function shows nicely how the pub key is calculated and then added in between the extended private key and the chaincode. This function is for example used by the cardano-cli after having read a file containing a Bech32-encoded Ed25519 BIP32 extended signing key.
 
 ```haskell
 -- | Convert a Ed25519 BIP32 extended signing key (96 bytes) to a @cardano-crypto@
@@ -134,35 +131,14 @@ convertBip32SigningKey signingKeyBs =
       Left $ CardanoAddressSigningKeyDeserialisationError signingKeyBs
 ```
 
-// // If we want to derive child keys like [here](https://input-output-hk.github.io/cardano-wallet/user-guide/cli#key-child), we need a PaymentExtendedKey
-// // see how `cardano-wallet` does this [here](https://github.com/input-output-hk/cardano-wallet/blob/master/lib/wallet/src/Cardano/Wallet/Primitive/AddressDerivation/Shelley.hs#L170)
-// // it uses `generateNew` and `XPrv` from [cardano-crypto](https://github.com/input-output-hk/cardano-crypto/blob/develop/src/Cardano/Crypto/Wallet.hs)
+// If we want to derive child keys like [here](https://input-output-hk.github.io/cardano-wallet/user-guide/cli#key-child), we need a PaymentExtendedKey
+// see how `cardano-wallet` does this [here](https://github.com/input-output-hk/cardano-wallet/blob/master/lib/wallet/src/Cardano/Wallet/Primitive/AddressDerivation/Shelley.hs#L170)
+// it uses `generateNew` and `XPrv` from [cardano-crypto](https://github.com/input-output-hk/cardano-crypto/blob/develop/src/Cardano/Crypto/Wallet.hs)
 
-// // !!! cardano-cli also uses the `cardano-crypto` package for extended key, but instead of `generateNew` it uses `generate` (see below Crypto.HD.generate)
-
-// // For the difference between normal and extended keys see here:
-// // chain-wallet from [iog](https://github.com/input-output-hk/chain-wallet-libs/blob/master/doc/CRYPTO.md#master-key-generation-to-cryptographic-key)
-// // normal/extended keys on [stack](https://cardano.stackexchange.com/questions/756/difference-between-normal-key-and-extended-key-in-cardano-cli-address-key-ge)
-// // good explanation to extended keys [here](https://river.com/learn/terms/x/xprv-extended-private-key/#:~:text=An%20extended%20private%20key%20is,funds%20associated%20with%20that%20key.)
-
-// from the code:
-// Shelley payment extended ed25519 keys
-
-// Shelley-era payment keys using extended ed25519 cryptographic keys.
-// They can be used for Shelley payment addresses and witnessing
-// transactions that spend from these addresses.
-
-// These extended keys are used by HD wallets. So this type provides
-// interoperability with HD wallets. The ITN CLI also supported this key type.
-// The extended verification keys can be converted (via 'castVerificationKey')
-// to ordinary keys (i.e. 'VerificationKey' 'PaymentKey') but this is /not/ the
-// case for the signing keys. The signing keys can be used to witness
-// transactions directly, with verification via their non-extended verification
-// key ('VerificationKey' 'PaymentKey').
-
-// // for verification keys:
-// // from Cardano.Ledger.Keys: We wrap the basic `VerKeyDSIGN` in order to add the key role. 
-// // `newtype VKey (kd :: KeyRole) c = VKey {unVKey :: DSIGN.VerKeyDSIGN (DSIGN c)}` 
+// For the difference between normal and extended keys see here:
+// chain-wallet from [iog](https://github.com/input-output-hk/chain-wallet-libs/blob/master/doc/CRYPTO.md#master-key-generation-to-cryptographic-key)
+// normal/extended keys on [stack](https://cardano.stackexchange.com/questions/756/difference-between-normal-key-and-extended-key-in-cardano-cli-address-key-ge)
+// good explanation to extended keys [here](https://river.com/learn/terms/x/xprv-extended-private-key/#:~:text=An%20extended%20private%20key%20is,funds%20associated%20with%20that%20key.)
 
 ### Interchangeable Shelley keys
 
@@ -241,19 +217,7 @@ So, what are the different keyroles used for? A look at the `cardano-cli` helps 
 
 The address command is used for the payment address commands, and so combined with the `key-gen` command we can generate `PaymentKey`s, `PaymentExtendedKey`s or `ByronKey`s
 
-```haskell
-runAddressKeyGenToFile
-  :: AddressKeyType
-  -> VerificationKeyFile
-  -> SigningKeyFile
-  -> ExceptT ShelleyAddressCmdError IO ()
-runAddressKeyGenToFile kt vkf skf = case kt of
-  AddressKeyShelley         -> generateAndWriteKeyFiles AsPaymentKey          vkf skf
-  AddressKeyShelleyExtended -> generateAndWriteKeyFiles AsPaymentExtendedKey  vkf skf
-  AddressKeyByron           -> generateAndWriteKeyFiles AsByronKey            vkf skf
-```
-
-Byron keys are for Byron addresses and witnessing transactions that spend from Byron addresses. As is explained in [Cardano.Api.Keys.Byron](https://github.com/input-output-hk/cardano-node/blob/master/cardano-api/src/Cardano/Api/Keys/Byron.hs), these keys come, because of a design mistake, with a 32byte chaincode used in HD derivation. So, a Byron key is very similar to a Payment extended key, resulting in a very simple `castVerificationKey` function:
+Byron keys are used to witness transactions that spend from Byron addresses. As is explained in [Cardano.Api.Keys.Byron](https://github.com/input-output-hk/cardano-node/blob/master/cardano-api/src/Cardano/Api/Keys/Byron.hs), these keys come, because of a design mistake, with a 32byte chaincode used in HD derivation. So, a Byron key is very similar to a Payment extended key, resulting in a very simple `castVerificationKey` function:
 
 ```haskell
 instance CastVerificationKeyRole ByronKey PaymentExtendedKey where
@@ -266,22 +230,6 @@ instance CastVerificationKeyRole ByronKey PaymentExtendedKey where
 
 The stake-address command is used for the stake address commands, and so combined with the `key-gen` command we can generate `StakeKey`s
 
-```haskell
-runStakeAddressKeyGenToFile
-  :: VerificationKeyFile
-  -> SigningKeyFile
-  -> ExceptT ShelleyStakeAddressCmdError IO ()
-runStakeAddressKeyGenToFile (VerificationKeyFile vkFp) (SigningKeyFile skFp) = do
-  let skeyDesc = "Stake Signing Key"
-  let vkeyDesc = "Stake Verification Key"
-
-  skey <- liftIO $ generateSigningKey AsStakeKey
-
-  let vkey = getVerificationKey skey
-```
-
-**StakeExtendedKey?**, cannot be made with cardano-cli
-
 ### cardano-cli node key-gen/key-gen-KES/key-gen-VRF (3 keys)
 
 node is for the node operation commands
@@ -290,206 +238,9 @@ StakePoolKey, this is a very sensitive key, [see here](https://developers.cardan
 KesKey [link](https://github.com/input-output-hk/cardano-node/blob/master/doc/stake-pool-operations/7_KES_period.md), KES stands for Key Evolving Signature
 VrfKey [link](https://medium.com/dcspark/cardano-algorand-leader-selection-explained-81f71a30b8bb), key take away: every stake pool operator has its own VRF key and this VRF key decides whether or not he is elected for a specific slot
 
-```haskell
-runNodeKeyGenCold :: VerificationKeyFile
-                  -> SigningKeyFile
-                  -> OpCertCounterFile
-                  -> ExceptT ShelleyNodeCmdError IO ()
-runNodeKeyGenCold (VerificationKeyFile vkeyPath) (SigningKeyFile skeyPath)
-                  (OpCertCounterFile ocertCtrPath) = do
-    skey <- liftIO $ generateSigningKey AsStakePoolKey
-    let vkey = getVerificationKey skey
-    firstExceptT ShelleyNodeCmdWriteFileError
-      . newExceptT
-      $ writeFileTextEnvelope skeyPath (Just skeyDesc) skey
-    firstExceptT ShelleyNodeCmdWriteFileError
-      . newExceptT
-      $ writeFileTextEnvelope vkeyPath (Just vkeyDesc) vkey
-    firstExceptT ShelleyNodeCmdWriteFileError
-      . newExceptT
-      $ writeFileTextEnvelope ocertCtrPath (Just ocertCtrDesc)
-      $ OperationalCertificateIssueCounter initialCounter vkey
-  where
-    skeyDesc, vkeyDesc, ocertCtrDesc :: TextEnvelopeDescr
-    skeyDesc = "Stake Pool Operator Signing Key"
-    vkeyDesc = "Stake Pool Operator Verification Key"
-    ocertCtrDesc = "Next certificate issue number: "
-                <> fromString (show initialCounter)
-
-    initialCounter :: Word64
-    initialCounter = 0
-
-
-runNodeKeyGenKES :: VerificationKeyFile
-                 -> SigningKeyFile
-                 -> ExceptT ShelleyNodeCmdError IO ()
-runNodeKeyGenKES (VerificationKeyFile vkeyPath) (SigningKeyFile skeyPath) = do
-    skey <- liftIO $ generateSigningKey AsKesKey
-    let vkey = getVerificationKey skey
-    firstExceptT ShelleyNodeCmdWriteFileError
-      . newExceptT
-      $ writeFileTextEnvelope skeyPath (Just skeyDesc) skey
-    firstExceptT ShelleyNodeCmdWriteFileError
-      . newExceptT
-      $ writeFileTextEnvelope vkeyPath (Just vkeyDesc) vkey
-  where
-    skeyDesc, vkeyDesc :: TextEnvelopeDescr
-    skeyDesc = "KES Signing Key"
-    vkeyDesc = "KES Verification Key"
-
-runNodeKeyGenVRF :: VerificationKeyFile -> SigningKeyFile
-                 -> ExceptT ShelleyNodeCmdError IO ()
-runNodeKeyGenVRF (VerificationKeyFile vkeyPath) (SigningKeyFile skeyPath) = do
-    skey <- liftIO $ generateSigningKey AsVrfKey
-    let vkey = getVerificationKey skey
-    firstExceptT ShelleyNodeCmdWriteFileError
-      . newExceptT
-      $ writeFileTextEnvelopeWithOwnerPermissions skeyPath (Just skeyDesc) skey
-    firstExceptT ShelleyNodeCmdWriteFileError
-      . newExceptT
-      $ writeFileTextEnvelope vkeyPath (Just vkeyDesc) vkey
-  where
-    skeyDesc, vkeyDesc :: TextEnvelopeDescr
-    skeyDesc = "VRF Signing Key"
-    vkeyDesc = "VRF Verification Key"
-```
-
-### cardano-cli genesis key-gen-genesis/key-gen-delegate/key-gen-utxo
+### cardano-cli genesis key-gen-genesis/key-gen-delegate/key-gen-utxoused to
 
 genesis is for the genesis block commands
 
 GenesisUTxOKey, this is one/several key/s to spend the funds created in the genesis file [see here](https://github.com/input-output-hk/cardano-node/blob/master/doc/reference/shelley-genesis.md)
 
-Create a Shelley genesis key pair
-Create a Shelley genesis delegate key pair
-Create a Shelley genesis UTxO key pair
-
-
-### what im missing
-
-  - GenesisExtendedKey
-  - GenesisDelegateExtendedKey
-  - ByronKeyLegacy
-
-
-
-
-
-
-## what happens in cardano-cli
-
-the different keys, as shown in the `case` distinction below, are PaymentKey, PaymentExtendedKey or ByronKey
-
-```haskell
-runAddressKeyGenToFile
-  :: AddressKeyType
-  -> VerificationKeyFile
-  -> SigningKeyFile
-  -> ExceptT ShelleyAddressCmdError IO ()
-runAddressKeyGenToFile kt vkf skf = case kt of
-  AddressKeyShelley         -> generateAndWriteKeyFiles AsPaymentKey          vkf skf
-  AddressKeyShelleyExtended -> generateAndWriteKeyFiles AsPaymentExtendedKey  vkf skf
-  AddressKeyByron           -> generateAndWriteKeyFiles AsByronKey            vkf skf
-```
-
-under the hood, the `cardano-cli` calls:
-
-```haskell
-generateKeyPair :: Key keyrole => AsType keyrole -> IO (VerificationKey keyrole, SigningKey keyrole)
-generateKeyPair asType = do
-  skey <- generateSigningKey asType
-  return (getVerificationKey skey, skey)
-```
-
-where PaymentKey is an instance of the Key class, and the value of `AsType PaymentKey` is as `AsPaymentKey`.
-
-
-
-
-
-
-
-
-
-
-
-finally, the key is generated here, where we need the keytype to get the seedSize:
-
-
-```haskell
-generateSigningKey :: Key keyrole => AsType keyrole -> IO (SigningKey keyrole)
-generateSigningKey keytype = do
-    seed <- Crypto.readSeedFromSystemEntropy seedSize
-    return $! deterministicSigningKey keytype seed
-  where
-    seedSize = deterministicSigningKeySeedSize keytype
-```
-
-
-### for SigningKey ByronKey:
-
-```haskell
-    deterministicSigningKey :: AsType ByronKey -> Crypto.Seed -> SigningKey ByronKey
-    deterministicSigningKey AsByronKey seed =
-       ByronSigningKey (snd (Crypto.runMonadRandomWithSeed seed Byron.keyGen))
-```
-
-explanation from Cardano.Api.Keys.Byron:
-
-Byron-era payment keys. Used for Byron addresses and witnessing
-transactions that spend from these addresses.
-These use Ed25519 but with a 32byte \"chaincode\" used in HD derivation.
-The inclusion of the chaincode is a design mistake but one that cannot
-be corrected for the Byron era. The Shelley era 'PaymentKey's do not include
-a chaincode. It is safe to use a zero or random chaincode for new Byron keys.
-
-this is runMonadRandomWithSeed in Cardano.Crypto.Seed:
-
-```haskell
--- Support for MonadRandom
---
-
--- | Run an action in 'MonadRandom' deterministically using a seed as a
--- finite source of randomness. Note that this is not a PRNG, so like with
--- 'getBytesFromSeed' it will fail if more bytes are requested than are
--- available.
---
--- So this is only really suitable for key generation where there is a known
--- upper bound on the amount of entropy that will be requested.
---
-runMonadRandomWithSeed :: Seed -> (forall m. MonadRandom m => m a) -> a
-runMonadRandomWithSeed s@(Seed bs) a =
-    case runIdentity (runMaybeT (evalStateT (unMonadRandomFromSeed a) s)) of
-      Just x  -> x
-      Nothing -> throw (SeedBytesExhausted (BS.length bs))
-```
-
-### for SigningKey PaymentKey:
-
-```haskell
-    deterministicSigningKey :: AsType PaymentKey -> Crypto.Seed -> SigningKey PaymentKey
-    deterministicSigningKey AsPaymentKey seed =
-        PaymentSigningKey (Crypto.genKeyDSIGN seed)
-```
-
-### for SigningKey PaymentExtendedKey: 
-
-```haskell
-    deterministicSigningKey :: AsType PaymentExtendedKey -> Crypto.Seed -> SigningKey PaymentExtendedKey
-    deterministicSigningKey AsPaymentExtendedKey seed =
-        PaymentExtendedSigningKey
-          (Crypto.HD.generate seedbs BS.empty)
-      where
-       (seedbs, _) = Crypto.getBytesFromSeedT 32 seed
-```
-for the last one, we also have a keychain. See explanations above..
-
-### for StakeKey
-
-this one is identical to SigningKey PaymentKey
-
-```haskell
-    deterministicSigningKey :: AsType StakeKey -> Crypto.Seed -> SigningKey StakeKey
-    deterministicSigningKey AsStakeKey seed =
-        StakeSigningKey (Crypto.genKeyDSIGN seed)
-```
