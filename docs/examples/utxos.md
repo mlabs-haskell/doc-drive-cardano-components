@@ -1,24 +1,44 @@
 # The UTxO in the cardano-api
 
-The Cardano network uses the Unspent Transaction Output (UTxO) model to represent transactions as inputs and outputs of UTxOs. A high level explanation of this model can be found [here](https://developers.cardano.org/docs/stake-pool-course/handbook/utxo-model/#:~:text=An%20unspent%20transaction%20output%20is,cannot%20be%20consumed%20in%20part.)
+The Cardano network represents transactions as inputs and outputs of UTxOs (Unspent Transaction Outputs), where the inputs get consumed (if allowed by the provided key/script witnesses) and new outputs get created. A high level explanation of the UTxO model can be found [here](https://developers.cardano.org/docs/stake-pool-course/handbook/utxo-model/#:~:text=An%20unspent%20transaction%20output%20is,cannot%20be%20consumed%20in%20part.)
 
 A little bit more technically, a UTxO can be seen as a data type containing two elements:
 - a transaction ID, which is a BLAKE2b-256 hash of the transaction in which it was produced, and an index (because a transaction can of course have multiple outputs)
-- The value it contains, the address to which it was sent, an optional datum (or datum hash) and, since the Vasil hard fork, an optional reference script (for its usage see [cip33](https://cips.cardano.org/cips/cip33/)).
+- its value, the address to which it was sent, since the Alonzo hard fork an optional datum (or datum hash) and, since the Vasil hard fork, an optional reference script (for its usage in connection with reference inputs see [cip33](https://cips.cardano.org/cips/cip33/)).
 
-from [emurgo](https://emurgo.io/understanding-unspent-transaction-outputs-in-cardano/)
-
-This is how the UTxO is defined in the cardano-api:
+In the cardano-api, the UTxO is defined as a map of these two elements:
 
 ```haskell
 newtype UTxO era = UTxO { unUTxO :: Map TxIn (TxOut CtxUTxO era) }
 ```
 
-where TxIn contains the transaction ID and index, and TxOut the remaining data.
+where the TxIn contains the transaction ID and index, and the TxOut the remaining data. In json format, obtained for example with the following cardano-cli command:
 
-As the UTxO type above shows, it is a map of `TxIn`s and `TxOut`s. So being precise, a UTxO is not **one** unspent transaction output, but arbitrarily many. This can lead to confusion, as normaly when speaking about a UTxO, we mean **one** unspent transaction output. 
+```bash
+cardano-cli query utxo --address ADDR --testnet-magic TESTNET-MAGIC --out-file /dev/stdout
+```
 
-In the cardano-api, the UTxO data type is used mainly for queries. When building such a UTxO query, the `QueryUTxOFilter` is used to filter the query, and with the precise UTxO definition in mind, it makes sense that the `WholeUTxO` value above means querying the chain for all unspent transaction outputs:
+such a UTxO looks like this:
+
+```json
+{
+    "d0a10a69b22ab7ff4877150438d1435587a327be52a0d8066a05fdcbf30787a5#0": {
+        "address": "addr_test1vp907jcda78gsxzukt54xynfgzgpq634yvp5836qk6nmkxqv64akd",
+        "datum": null,
+        "datumhash": null,
+        "inlineDatum": null,
+        "referenceScript": null,
+        "value": {
+            "lovelace": 10000000
+        }
+    }
+```
+
+A more interesting example of a UTxO can be found [here](https://github.com/input-output-hk/hydra/blob/master/hydra-node/golden/UTxO'%20(TxOut%20CtxUTxO%20BabbageEra).json).
+
+As the definition and the second example show, a UTxO it is a map of `TxIn`s and `TxOut`s. So being precise, a UTxO is not **one** unspent transaction output, but arbitrarily many. This can lead to confusion, as normaly when speaking about a UTxO, we mean **one** unspent transaction output.
+
+In the cardano-cli, the UTxO data type is used mainly for queries. In these, the cardano-api type `QueryUTxOFilter` is used to filter the query, and with the precise UTxO definition from above in mind, it makes sense that the `WholeUTxO` filter below means querying the chain for all unspent transaction outputs (which is only advisable on small testnets):
 
 ```haskell  
 data QueryUTxOFilter =
@@ -30,94 +50,83 @@ data QueryUTxOFilter =
    | QueryUTxOByTxIn (Set TxIn)
 ```
 
-The `cardano-cli query utxo` has as options `--whole-utxo`, `--address` and `--tx-in`, and uses these filters accordingly.
+These filters are used by the `cardano-cli query utxo` command, with the `--address` option for outputs filtered by the provided addresses and the `--tx-in` option for outputs filtered by transaction IDs plus indexes.
 
-// So, the cardano-api type `QueryUTxOFilter` provides various ways to query a filtered subset of the UTxO, where `UTxO` means all existing utxos on the blockchain.
+When building transactions with the cardano-cli, though, a 'UTxO' is either a `--tx-in` when in the context of a transaction input or a `--tx-out` (plus `--tx-out-datum-hash` or similar options if needed) when in the context of a transaction output. For a transaction output we of course have no other choice, as the transaction hash needed for the TxIn doesn't exist yet at the moment of building the transaction.
 
-// Also: in the context of a minimum utxo value, whereby this resembles more a minimum txOut value, as the function `calculateMinimumUTxO` takes as an argument a 
-// -> TxOut CtxTx era
+As for the transaction inputs: The information contained in the TxIn is obviously not enough to build the transaction. The `cardano-cli` therefore queries the node with above mentioned `QueryUTxOByTxIn` filter inside the `runTxBuild` function. Later in the same function, this UTxO is passed to the cardano-api `makeTransactionBodyAutoBalance` function and converted to its cardano-ledger type to evaluate the transaction execution units.
 
-// and thirdly: we use CtxUTxO vs CtxTx to indicate whether the `TxOutDatum` of TxOut can be a `TxOutDatumInTx` (in the case of CtxTx) or not (in the case of CtxUTxO). (To go from one to the other we have toCtxUTxOTxOut)
+# The TxOut and its context
 
-// explanation Cardano.Api.TxBody:
-
-// A transaction output that specifies the whole datum value. This can
-// only be used in the context of the transaction body, and does not occur
-// in the UTxO. The UTxO only contains the datum hash.
-
-also, for estimating execution units and so forth, where we need functions from cardano-ledger, we use cardano-api utxo and convert it into Ledger.UTxO, see `toLedgerUTxO` in `evaluateTrasactionExecutionUnits` in Cardano.Api.Fees
-
-
-
-so, there really are just TxIn and TxOut
-
-In the context of building a transaction, the utxo that we produce is a TxIn and the utxo that we produce is a TxOut.
-For TxOut that's obvious, as we don't have the TxId and the TxIx yet.
-For the TxIn it's a little bit more complicated. The `cardano-cli` expects a TxIn, but under the hood it builds a (txIn, witness)
-
-So: you can 
-utxo is a very confusing term, in `cardano-cli` it basically means all unspent transaction outputs, their TxIx (hash), TxId (id), Value, Address, Datum, and ReferenceScript. for an example of such a map in json format, see:
-
-[utxo.json](https://github.com/input-output-hk/hydra/blob/master/hydra-node/golden/UTxO'%20(TxOut%20CtxUTxO%20BabbageEra).json)
-
-
-from cardano-hydra-api/Cardano.Api.UTxO:
-
-This module is name-spaces slightly different from the rest
-because it is meant to be used as a replacement of the UTxO type of the
-cardano-api which is not convenient enough to work with. Having it as
-'Hydra.Cardano.Api.UTxO' causes cyclic imports with other modules also
-relying on this newtype. So instead, we do 'as if' it was part of the
-cardano-api in the first palce.
-
-in Cardano.Api.Query, UTxO is defined as:
+Especially noticeable about the TxOut type is that it is tagged with a context, which can be either a transaction (`CtxTx`) or just the UTxO itself (`CtxUTxO`):
 
 ```haskell
-newtype UTxO era = UTxO { unUTxO :: Map TxIn (TxOut CtxUTxO era) }
-  deriving (Eq, Show)
+data TxOut ctx era = TxOut (AddressInEra    era)
+                           (TxOutValue      era)
+                           (TxOutDatum ctx  era)
+                           (ReferenceScript era)
 ```
 
-whereas in ``hydra`` Cardano.Api.UTxO, it is defined as:
+The reason for this is the `TxOutDatum` type. When building a transaction with the cardano-cli, depending on the options chosen, the cardan-cli parses the datum information into one of the following values:
 
 ```haskell
-type Era = BabbageEra
-
-type UTxO = UTxO' (TxOut CtxUTxO Era)
-
--- | Newtype with phantom types mostly required to work around the poor interface
--- of 'Ledger.UTXO' and provide 'Monoid' and 'Foldable' instances to make utxo
--- manipulation bareable.
-newtype UTxO' out = UTxO
-  { toMap :: Map TxIn out
-  }
-  deriving newtype
-    ( Eq
-    , Show
-    , Functor
-    , Foldable
-    , Semigroup
-    , Monoid
-    )
+data TxOutDatumAnyEra = TxOutDatumByHashOnly (Hash ScriptData)
+                      | TxOutDatumByHashOf    ScriptDataOrFile
+                      | TxOutDatumByValue     ScriptDataOrFile
+                      | TxOutInlineDatumByValue ScriptDataOrFile
+                      | TxOutDatumByNone
 ```
-what could be the reason? Maybe, that the Ledger.TxOut can either be a ByronTxOut, ShelleyTxOut or BabbageTxOut
 
-The problem with the ledger utxo (as explained in Hydra.Cardano.Api.Value):
+After using the datum to build a (cardano-cli) `TxOutAnyEra`, the `runTxBuildCmd` converts this txOut with `toTxOutInAnyEra` into a cardano-api `TxOut CtxTx era` (so, a txOut in the transaction context). 
+
+For the conversion of the cardano-cli `TxOutDatumAnyEra` to the cardano-api `TxOutDatum` inside `toTxOutInAnyEra`, we have three case distinctions: 
+
+- If scripts are not supported (so in all eras before Alonzo), the result is a `TxOutDatumNone`. 
+- If scripts are supported but we are not yet in the babbage era, we use `toTxAlonzoDatum`: This can produce the above or a `TxOutDatumHash` or a `TxOutDatumInTx`.
+- In Babbage and later, we use `toTxDatumReferenceScriptBabbage`: This can produce all of the above, plus a `TxOutDatumInline` if the cardano-cli input got parsed to a `TxOutInlineDatumByValue` (by using the --tx-out-inline-datum)
+
+The transaction context is important because of the possibilty to produce a `TxOutDatumInTx`:
 
 ```haskell
--- | Calculate minimum value for a UTxO. Note that cardano-api defines a
--- 'calculateMinimumUTxO' function but it is flawed (see NOTE below) and has an
--- unsatisfactory API because it works across multiple eras.
---
--- This one is specialized to Babbage and therefore, can be pure.
-minUTxOValue ::
-  ProtocolParameters ->
-  TxOut CtxTx Era ->
-  Value
+TxOutDatumInTx'  :: ScriptDataSupportedInEra era
+                 -> Hash ScriptData
+                 -> ScriptData
+                 -> TxOutDatum CtxTx era
 ```
 
-the cardano-api `calculateMinimumUTxO`? very complicated, works across multiple eras.., and before Alonzo era, this information is in the protocol parameters
+A value of this type contains the non hashed datum (ScriptData). But when we convert a txOut containing such a datum to its ledger type (with `convTxOuts`, to later produce the cardano-ledger transaction body content), we only keep the hash:
 
-problem: for `evaluateMinLovelaceOutput` inside, we need a `Ledger.TxOut ledgerera`, which can either be a `ByronTxOut`, a `ShelleyTxOut` or a `BabbageTxOut`.
+```haskell
+toAlonzoTxOutDataHash' (TxOutDatumInTx' _ (ScriptDataHash dh) _) = SJust dh
+```
 
+The datum itself gets stored in a map in the transaction body (in `TxBodyScriptData`). To get this information using the hash as key, we have `fromLedgerTxOuts`, which internally uses `fromAlonzoTxOutDatum scriptDataInEra datahash`.
 
-what happens when I use `cardano-cli query utxo`, filtered by address? it produces a list of TxIn belonging to this address, plus the value, the datum (if present), so it is the subset of the utxo 
+So, a `TxOutDatumInTx` makes only sense in the context of a transaction, as we need a transaction body from which we can retrieve the datum. That's why we also have the type `TxOut CtxUTxO era`, that cannot be built with a `TxOutDatumInTx`.
+
+Changing the context of a txOut from transaction to UTxO can be done with the following cardano-api function:
+
+```haskell
+toCtxUTxOTxOut :: TxOut CtxTx  era -> TxOut CtxUTxO era
+toCtxUTxOTxOut (TxOut addr val d refS) =
+  let dat = case d of
+              TxOutDatumNone -> TxOutDatumNone
+              TxOutDatumHash s h -> TxOutDatumHash s h
+              TxOutDatumInTx' s h _ -> TxOutDatumHash s h
+              TxOutDatumInline s sd -> TxOutDatumInline s sd
+  in TxOut addr val dat refS
+```
+
+where the `TxOutDatumInTx` gets converted to a `TxOutDatumHash`, loosing the information about the data and only retaining the hash.
+
+As can be seen in the `UTxO` definition at the beginning of the chapter, the txOuts in the map have to be in the UTxO context. 
+
+Since the start of the Babbage era, the `TxOutDatumInTx` has lost importance though, since a datum can now be stored in a cardano-ledger txOut. This is done, inside `convTxOuts`, with the following function:
+
+```haskell
+toBabbageTxOutDatum' (TxOutDatumInline _ sd) = scriptDataToInlineDatum sd
+
+--where:
+scriptDataToInlineDatum :: ScriptData -> Babbage.Datum ledgerera
+scriptDataToInlineDatum = Babbage.Datum . Alonzo.dataToBinaryData . toAlonzoData
+```

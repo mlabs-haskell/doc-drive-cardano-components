@@ -2,6 +2,8 @@
 
 the following example is taken from the [PPP0303](https://github.com/input-output-hk/plutus-pioneer-program/tree/third-iteration/code/week03)
 
+Another example of building a simple transaction with cardano-cli can be found [here](https://www.youtube.com/watch?v=rbst_uiGpI4)
+
 ## Generate keys
 
 First, we need to create a key pair of type `VerificationKey PaymentKey` and `SigningKey PaymentKey`. To get the singing key, the `cardano-cli` command `address key-gen` uses the cardano-api function `generateSigningKey :: Key keyrole => AsType keyrole -> IO (SigningKey keyrole)` under the hood.

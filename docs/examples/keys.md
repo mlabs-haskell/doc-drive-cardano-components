@@ -244,3 +244,9 @@ genesis is for the genesis block commands
 
 GenesisUTxOKey, this is one/several key/s to spend the funds created in the genesis file [see here](https://github.com/input-output-hk/cardano-node/blob/master/doc/reference/shelley-genesis.md)
 
+
+# Addresses
+
+[CIP19](https://cips.cardano.org/cips/cip19/)
+
+cardano node course: [iog](https://cardano-course.gitbook.io/cardano-course/handbook/module-2-basic-operations/create-keys-and-addresses)
