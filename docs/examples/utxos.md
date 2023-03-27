@@ -18,8 +18,6 @@ where the TxIn contains the transaction ID and index, and the TxOut the remainin
 cardano-cli query utxo --address ADDR --testnet-magic TESTNET-MAGIC --out-file /dev/stdout
 ```
 
-such a UTxO looks like this:
-
 ```json
 {
     "d0a10a69b22ab7ff4877150438d1435587a327be52a0d8066a05fdcbf30787a5#0": {
@@ -121,7 +119,7 @@ where the `TxOutDatumInTx` gets converted to a `TxOutDatumHash`, loosing the inf
 
 As can be seen in the `UTxO` definition at the beginning of the chapter, the txOuts in the map have to be in the UTxO context. 
 
-Since the start of the Babbage era, the `TxOutDatumInTx` has lost importance though, since a datum can now be stored in a cardano-ledger txOut. This is done, inside `convTxOuts`, with the following function:
+Since the start of the Babbage era, the `TxOutDatumInTx` has lost importance though, since a non hashed datum can now be stored in a cardano-ledger txOut. This is done, inside `convTxOuts`, with the following function:
 
 ```haskell
 toBabbageTxOutDatum' (TxOutDatumInline _ sd) = scriptDataToInlineDatum sd

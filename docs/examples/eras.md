@@ -162,6 +162,7 @@ changeOutput =
     (AddressInEra (ShelleyAddressInEra ShelleyBasedEraBabbage) addr)
     (TxOutValue MultiAssetInBabbageEra (lovelaceToValue $ initialAmount - amount - fee))
     (TxOutDatumHash ScriptDataInBabbageEra (hashScriptData $ fromPlutusData someDatum))
+    ReferenceScriptNone
 ```
 
 and this is how the function looks using the wrapped API:
@@ -173,6 +174,9 @@ changeOutput =
     (AddressInEra addr)
     (lovelaceToValue $ initialAmount - amount - fee)
     (TxOutDatumHash $ hashScriptData $ fromPlutusData someDatum)
+    ReferenceScriptNone
 ```
+
+For a real example see for example the hydra-auction [here](https://github.com/mlabs-haskell/hydra-auction/blob/staging/src/HydraAuction/Tx/Escrow.hs#L86)
 
 There are plans to merge hydra-cardano-api into cardano-api at some point, though if and when is unclear at the moment.

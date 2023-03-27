@@ -215,7 +215,7 @@ So, what are the different keyroles used for? A look at the `cardano-cli` helps 
 
 ### cardano-cli address key-gen
 
-The address command is used for the payment address commands, and so combined with the `key-gen` command we can generate `PaymentKey`s, `PaymentExtendedKey`s or `ByronKey`s
+The `address` command is used for the payment address commands, and so combined with the `key-gen` command we can generate `PaymentKey`s, `PaymentExtendedKey`s or `ByronKey`s
 
 Byron keys are used to witness transactions that spend from Byron addresses. As is explained in [Cardano.Api.Keys.Byron](https://github.com/input-output-hk/cardano-node/blob/master/cardano-api/src/Cardano/Api/Keys/Byron.hs), these keys come, because of a design mistake, with a 32byte chaincode used in HD derivation. So, a Byron key is very similar to a Payment extended key, resulting in a very simple `castVerificationKey` function:
 
@@ -228,11 +228,15 @@ instance CastVerificationKeyRole ByronKey PaymentExtendedKey where
 
 ### cardano-cli stake-address key-gen
 
-The stake-address command is used for the stake address commands, and so combined with the `key-gen` command we can generate `StakeKey`s
+The `stake-address` command is used for commands associated with staking, and so combined with the `key-gen` command we can generate `StakeKey`s. Stake keys are used to delegate stake tied to a stake address (resp. to an address that contains not only a payment credential, but also a staking credential). For a step-by-step explanation on how to register and delegate a stake key, see [here](https://cardano-course.gitbook.io/cardano-course/handbook/module-2-basic-operations/register-stake-address-and-delegate).
+
+#### certificate-file stake.cert
+
+
 
 ### cardano-cli node key-gen/key-gen-KES/key-gen-VRF (3 keys)
 
-node is for the node operation commands
+The `node` command is used for commands associated with operating a stake pool. For an overview of the three keyroles needed, see [here](https://docs.cardano.org/development-guidelines/operating-a-stake-pool/creating-keys-and-certificates)
 
 StakePoolKey, this is a very sensitive key, [see here](https://developers.cardano.org/docs/operate-a-stake-pool/cardano-key-pairs/#cardano-stake-pool-key-pairs)
 KesKey [link](https://github.com/input-output-hk/cardano-node/blob/master/doc/stake-pool-operations/7_KES_period.md), KES stands for Key Evolving Signature

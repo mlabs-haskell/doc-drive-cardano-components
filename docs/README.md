@@ -12,6 +12,8 @@ Another tool to build and submit transactions is the `cardano-cli`. the cardano-
 
 Sometimes it may also be necessary to use the cardano-api directly. One example for this is the [mlabs hydra-demo](https://github.com/mlabs-haskell/hydra-demo). The interface to speak to a hydra node is a websocket and so tools like the contract monad and the PAB (plutus application backend) are not (yet) available (see details [here](https://hydra.family/head-protocol/docs/getting-started/developing-on-hydra#off-chain-code)). [hydra-demo](./examples/hydra-demo.md) shows how the cardano-api can be used to build, balance and sign transactions (which then are serialised to `CBOR` and transmitted through websocket to a hydra node).
 
-## working with eras
+## Topics in more detail
 
-working with eras can be confusing. So the hydra-project simplified it for people who only need the babbage era and plutus V2 scripts. explanations [here](./examples/eras.md)
+- [eras](./examples/eras.md)
+- [utxos](./examples/utxos.md)
+- [keys](./examples/keys.md)
