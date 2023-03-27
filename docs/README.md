@@ -14,6 +14,7 @@ Sometimes it may also be necessary to use the cardano-api directly. One example 
 
 ## Topics in more detail
 
+- [node-course](./examples/cardano-node.md)
 - [eras](./examples/eras.md)
 - [utxos](./examples/utxos.md)
 - [keys](./examples/keys.md)
