@@ -12,7 +12,7 @@ Moreover, these documents are part of [MLabs'](https://www.mlabs-digital.com/) D
 
 ## Version Notes
 
-These particular documents were originally written by [pb99u069](https://github.com/pb99u069) as part of this proposal. It is forked and collected here for easier discoverability, organization, and transparency. As of writing, the author hosts a [GitHub Pages instance](https://pb99u069.github.io/) which some readers may prefer. Finally, as part of Project Catalyst fund compliance, regular progress reports that document the history of our Developer Documentation Drive project are publicly available through Project Catalyst channels and reproduced [here](https://github.com/mlabs-haskell/catalyst-funded-projects/tree/main/Fund9/Dev%20Documentation%20Drive).
+The documentation herein was originally written by [pb99u069](https://github.com/pb99u069) as part of this Fund9 proposal. The original repo was forked and its contents collected here for greater discoverability, organization, and transparency. As of writing, the author hosts a [GitHub Pages instance](https://pb99u069.github.io/) which some readers may prefer. Finally, as part of Project Catalyst fund compliance, regular progress reports documenting the history of our Developer Documentation Drive project are publicly available through Project Catalyst channels and reproduced [here](https://github.com/mlabs-haskell/catalyst-funded-projects/tree/main/Fund9/Dev%20Documentation%20Drive).
 
 ## License
 
