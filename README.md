@@ -1,6 +1,6 @@
 # Cardano Components Documentation
 
-Welcome to our collection of walkthroughs and explainers of the Cardano API and related components! This body of work, while not comprehensive, is intended as a quick-and-easy overview of Cardano blockchain essentials for new developers.
+Welcome to our collection of walkthroughs and explainers of the Cardano API and related components! This body of work, while not comprehensive, is intended as a quick-and-easy overview of the Cardano blockchain essentials to benefit new developers.
 
 Moreover, these documents are part of [MLabs'](https://www.mlabs-digital.com/) Developer Documentation Drive project. This project was generously supported and funded by the Cardano community through [Project Catalyst](https://projectcatalyst.io/), and its original Fund9 grant proposal can be viewed [here](https://cardano.ideascale.com/c/idea/64396). The documentation of several other ecosystem projects was also improved as part of this initiative, in particular:
 
